@@ -47,7 +47,7 @@ def evaluate_preferred_strategy(dataframe: pd.DataFrame, column: str, target: st
         _dataframe[col] = le.fit_transform(_dataframe[col])
 
     for strategy in IMPUTATION_STRATEGIES:
-        __dataframe = _dataframe.copy()
+        __dataframe = _dataframe.copy().reset_index()
         score = 0.0
         
         # Only numeric colum can be applied all types of methods
@@ -56,8 +56,8 @@ def evaluate_preferred_strategy(dataframe: pd.DataFrame, column: str, target: st
                 imputer = SimpleImputer(missing_values=pd.NA, strategy=strategy)
                 __dataframe[column] = imputer.fit_transform(__dataframe[column].to_numpy().reshape(-1, 1)).reshape(-1)
             else:
-                imputer = KNNImputer(n_neighbors=5)
-                __dataframe[column] = imputer.fit_transform(__dataframe[column].to_numpy().reshape(-1, 1)).reshape(-1)
+                imputer = KNNImputer(n_neighbors=3)
+                __dataframe[column] = pd.DataFrame(imputer.fit_transform(__dataframe) , columns = __dataframe.columns)[column]
 
             # Evaluate
             X_train, X_test, y_train, y_test = train_test_split(__dataframe.drop(target, axis=1), __dataframe[target],
@@ -73,8 +73,8 @@ def evaluate_preferred_strategy(dataframe: pd.DataFrame, column: str, target: st
                     imputer = SimpleImputer(missing_values=pd.NA, strategy=strategy)
                     __dataframe[column] = imputer.fit_transform(__dataframe[column].to_numpy().reshape(-1, 1)).reshape(-1)
                 else:
-                    imputer = KNNImputer(n_neighbors=5)
-                    __dataframe[column] = imputer.fit_transform(__dataframe[column].to_numpy().reshape(-1, 1)).reshape(-1)
+                    imputer = KNNImputer(n_neighbors=3)
+                    __dataframe[column] = pd.DataFrame(imputer.fit_transform(__dataframe) , columns = __dataframe.columns)[column]
                 
                 # Evaluate
                 score = 0.0
