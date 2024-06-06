@@ -6,24 +6,8 @@ import pandas as pd
 import ipywidgets as widgets
 
 import autobahn.preprocessing as preprocessing
-from autobahn.preprocessing import type_converter
+from autobahn.preprocessing import type_converter, missing_value
 from autobahn.utils.dataset import get_dataset_statistics
-
-class MissingValueProcessor:
-    # Remove rows of missing value
-    def remove(dataframe, target_columns):
-        _df = dataframe.copy()
-        for target_column in target_columns:
-            _df.dropna(subset=[target_column], inplace=True)
-        return _df
-    
-    # Fill values
-    def fill(dataframe, target_columns):
-        _df = dataframe.copy()
-        for target_column in target_columns:
-            subset_without_nan = _df.dropna(subset=[target_column])
-            _df[target_column].fillna(np.random.choice(subset_without_nan[target_column], size=1)[0], inplace=True)
-        return _df
 
 class Tabs:
     NUMBER_OF_TABS = 3
@@ -53,7 +37,7 @@ class Tabs:
     ##################
     def upload_file(self, change):
         content = change['new'][0]['content']
-        self.dataframe = pd.read_csv(io.StringIO(codecs.decode(content)))
+        self.dataframe = pd.read_csv(io.StringIO(codecs.decode(content)), na_values=missing_value.MISSING_VALUE_SYMBOL)
         preprocessing.all_in_one(self.dataframe) # 데이터 전처리
         for col in self.dataframe.columns:
             self.column_scaling_method[col] = 'False'
@@ -117,21 +101,16 @@ class Tabs:
     
     def on_preprocessing_apply(self, _):
         self.data_preprocessing_loading.description = "Processing..."
-
+        missing_value.run(self.dataframe, self.dependent_col)
+        self.data_preprocessing_loading.value += 3
+        self.update_dataset_verification_view()
+        
         # 어떤 컬럼이 자동 전처리에 해당하는지 확인
-        auto_transform_cols, non_auto_transform_cols = [], []
         # for key in self.is_auto_preprocessing.keys():
         #     if self.is_auto_preprocessing[key]:
         #         auto_transform_cols.append(key)
         #     else:
-        #         non_auto_transform_cols.append(key)
-
-        # auto transform이 false라면, 결측치 제거
-        # auto transform이 true라면, 결측치 랜덤 값 및 범주로 채워넣기
-        # self.dataframe = MissingValueProcessor.remove(self.dataframe, non_auto_transform_cols) # 결측치 제거
-        # self.data_preprocessing_loading.value += 2
-        # self.dataframe = MissingValueProcessor.fill(self.dataframe, auto_transform_cols) # 랜덤 값/범주 채워넣기
-        # self.data_preprocessing_loading.value += 2
+        #         non_auto_transform_cols.append(key
         
     def update_data_preprocessing_view(self):
         children = []

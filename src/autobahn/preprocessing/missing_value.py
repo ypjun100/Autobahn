@@ -25,13 +25,6 @@ def replace_series(series: pd.Series, to = None) -> pd.Series:
     return tmp
 
 
-# If ratio of missing values in column is over 90%, remove column
-def clean(dataframe: pd.DataFrame):
-    for column in detect(dataframe):
-        if int(len(dataframe) * 0.9) <= sum(replace_series(dataframe[column]).isna()):
-            dataframe.drop(column, axis=1, inplace=True)
-
-
 # Get imputation strategy which has highest score
 def evaluate_preferred_strategy(dataframe: pd.DataFrame, column: str, target: str) -> str:
 
@@ -118,9 +111,7 @@ def apply(dataframe: pd.DataFrame, column: str, strategy: str):
 
 # Main runner
 def run(dataframe: pd.DataFrame, target: str):
-    clean(dataframe)
     for column in detect(dataframe):
         preferred_strategy = evaluate_preferred_strategy(dataframe, column, target)
         print(column, preferred_strategy)
         apply(dataframe, column, preferred_strategy)
-    print(dataframe)
