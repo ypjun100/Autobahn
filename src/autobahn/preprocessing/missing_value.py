@@ -1,4 +1,5 @@
 import gc
+import numpy as np
 import pandas as pd
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import LabelEncoder
@@ -53,8 +54,7 @@ def evaluate_preferred_strategy(dataframe: pd.DataFrame, column: str, target: st
         # Only numeric colum can be applied all types of methods
         if column in numeric_columns:
             if strategy != 'knn':
-                imputer = SimpleImputer(missing_values=pd.NA, strategy=strategy)
-                __dataframe[column] = imputer.fit_transform(__dataframe[column].to_numpy().reshape(-1, 1)).reshape(-1)
+                apply(__dataframe, column, strategy)
             else:
                 imputer = KNNImputer(n_neighbors=3)
                 __dataframe[column] = pd.DataFrame(imputer.fit_transform(__dataframe) , columns = __dataframe.columns)[column]
@@ -70,8 +70,7 @@ def evaluate_preferred_strategy(dataframe: pd.DataFrame, column: str, target: st
         else: # Categorical colum can be applied only mode and knn
             if strategy in ['most_frequent', 'knn']:
                 if strategy != 'knn':
-                    imputer = SimpleImputer(missing_values=pd.NA, strategy=strategy)
-                    __dataframe[column] = imputer.fit_transform(__dataframe[column].to_numpy().reshape(-1, 1)).reshape(-1)
+                    apply(__dataframe, column, strategy)
                 else:
                     imputer = KNNImputer(n_neighbors=3)
                     __dataframe[column] = pd.DataFrame(imputer.fit_transform(__dataframe) , columns = __dataframe.columns)[column]
@@ -96,9 +95,32 @@ def evaluate_preferred_strategy(dataframe: pd.DataFrame, column: str, target: st
     return preferred_strategy
 
 
+# Apply imputation strategy in specific column
+def apply(dataframe: pd.DataFrame, column: str, strategy: str):
+    if strategy == 'mean':
+        if 'int' in str(dataframe[column].dtypes).lower():
+            dataframe[column] = dataframe[column].fillna(int(dataframe[column].mean()))
+        else:
+            dataframe[column] = dataframe[column].fillna(float(dataframe[column].mean()))
+    elif strategy == 'median':
+        if 'int' in str(dataframe[column].dtypes).lower():
+            dataframe[column] = dataframe[column].fillna(int(dataframe[column].median()))
+        else:
+            dataframe[column] = dataframe[column].fillna(float(dataframe[column].median()))
+    elif strategy == 'most_frequent' or strategy == 'knn': # TODO: knn 구현
+        if 'int' in str(dataframe[column].dtypes).lower():
+            dataframe[column] = dataframe[column].fillna(int(dataframe[column].dropna().mode()[0]))
+        elif 'float' in str(dataframe[column].dtypes).lower():
+            dataframe[column] = dataframe[column].fillna(float(dataframe[column].dropna().mode()[0]))
+        else:
+            dataframe[column] = dataframe[column].fillna(dataframe[column].dropna().mode()[0])
+
+
 # Main runner
 def run(dataframe: pd.DataFrame, target: str):
     clean(dataframe)
     for column in detect(dataframe):
-        preferred_method = evaluate_preferred_strategy(dataframe, column, target)
-        print(column, preferred_method)
+        preferred_strategy = evaluate_preferred_strategy(dataframe, column, target)
+        print(column, preferred_strategy)
+        apply(dataframe, column, preferred_strategy)
+    print(dataframe)

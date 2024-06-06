@@ -13,7 +13,7 @@ def run(dataframe: pd.DataFrame, target: str):
     missing_value.run(dataframe, target)
 
 # df = pd.read_csv("/home/jovyan/work/Autobahn/dataset/test.csv", na_values=missing_value.MISSING_VALUE_SYMBOL)
-df = pd.read_csv("/home/jovyan/work/Autobahn/dataset/data_csv.csv", na_values=missing_value.MISSING_VALUE_SYMBOL)
-run(df, 'ASD_traits')
+# df = pd.read_csv("/home/jovyan/work/Autobahn/dataset/data_csv_test.csv", na_values=missing_value.MISSING_VALUE_SYMBOL)
+# run(df, 'ASD_traits')
 # print(df)
-print(df.isna().sum())
+# print(df.isna().sum())
