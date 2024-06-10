@@ -1,7 +1,6 @@
 import io
 import codecs
 import functools
-import numpy as np
 import pandas as pd
 import ipywidgets as widgets
 
@@ -10,8 +9,8 @@ from autobahn.preprocessing import type_converter, missing_value
 from autobahn.utils.dataset import get_dataset_statistics
 
 class Tabs:
-    NUMBER_OF_TABS = 3
-    TITLES = ["데이터셋 업로드", "데이터셋 확인", "데이터 전처리"]
+    NUMBER_OF_TABS = 5
+    TITLES = ["데이터셋 업로드", "데이터셋 확인", "데이터 전처리", "최종 데이터셋", "모델링"]
 
     def __init__(self):
         self.tab = widgets.Tab()
@@ -19,6 +18,10 @@ class Tabs:
         self.dependent_col = ""           # 종속변수 명
         self.is_echo = False              # Dropdown 에코 방지
         self.column_scaling_method = {}   # 각 변수별 스케일링 방식 지정 (기본값: False)
+
+        # 데이터프레임 출력이 생략되는 현상 방지
+        pd.set_option('display.max_colwidth', None)
+        pd.set_option('display.max_columns', None)  
 
     def get_title(self, index):
         return Tabs.TITLES[index]
@@ -30,6 +33,10 @@ class Tabs:
             return self.get_dataset_verfication_view()
         elif index == 2:
             return self.get_data_preprocessing_view()
+        elif index == 3:
+            return self.get_final_dataset_view()
+        elif index == 4:
+            return self.get_auto_modeling_view()
 
 
     ##################
@@ -102,8 +109,10 @@ class Tabs:
     def on_preprocessing_apply(self, _):
         self.data_preprocessing_loading.description = "Processing..."
         missing_value.run(self.dataframe, self.dependent_col)
-        self.data_preprocessing_loading.value += 3
-        self.update_dataset_verification_view()
+        self.data_preprocessing_loading.value += 5
+        
+        self.update_final_dataset_view()
+        self.tab.selected_index = 3
         
         # 어떤 컬럼이 자동 전처리에 해당하는지 확인
         # for key in self.is_auto_preprocessing.keys():
@@ -133,6 +142,40 @@ class Tabs:
         apply_button.on_click(self.on_preprocessing_apply)
         children.append(widgets.HBox([apply_button, self.data_preprocessing_loading]))
         self.data_preprocessing_vbox.children = children
+    
+
+    ##################
+    # 3 - Final Dataset
+    ##################
+    def get_final_dataset_view(self):
+        self.final_dataset_vbox = widgets.VBox([])
+        return self.final_dataset_vbox
+    
+    def on_start_modeling(self, _):
+        self.tab.selected_index = 4
+    
+    def update_final_dataset_view(self):
+        children = []
+        children.append(widgets.HTML(value="<h4>총 데이터 수 : " + str(len(self.dataframe)) + "개</h4>"))
+        children.append(widgets.HTML(value="<h4>최종 데이터셋</h4>"))
+        children.append(widgets.HTML(value=self.dataframe.head()._repr_html_()))
+        children.append(widgets.HTML(value="<h4>최종 데이터셋 통계치</h4>"))
+        children.append(widgets.HTML(value=get_dataset_statistics(self.dataframe).style.hide()._repr_html_()))
+        children.append(widgets.HTML(value="<hr/>"))
+        start_modeling_button = widgets.Button(description="Start Auto Modeling")
+        start_modeling_button.on_click(self.on_start_modeling)
+        children.append(start_modeling_button)
+        self.final_dataset_vbox.children = children
+
+
+    ##################
+    # 4 - Auto Modeling
+    ##################
+    def get_auto_modeling_view(self):
+        return widgets.VBox([])
+    
+    def update_auto_modeling_view(self):
+        pass
 
 
 def display():
