@@ -4,9 +4,10 @@ import functools
 import pandas as pd
 import ipywidgets as widgets
 
+from autobahn.preprocessing import scaler
 import autobahn.preprocessing as preprocessing
-from autobahn.preprocessing import type_converter, missing_value
 from autobahn.utils.dataset import get_dataset_statistics
+from autobahn.preprocessing import type_converter, missing_value
 
 class Tabs:
     NUMBER_OF_TABS = 5
@@ -17,7 +18,7 @@ class Tabs:
         self.dataframe = None             # 데이터 변수
         self.dependent_col = ""           # 종속변수 명
         self.is_echo = False              # Dropdown 에코 방지
-        self.column_scaling_method = {}   # 각 변수별 스케일링 방식 지정 (기본값: False)
+        self.scaling_method = {}          # 각 변수별 스케일링 방식 지정 (기본값: False)
 
         # 데이터프레임 출력이 생략되는 현상 방지
         pd.set_option('display.max_colwidth', None)
@@ -45,9 +46,9 @@ class Tabs:
     def upload_file(self, change):
         content = change['new'][0]['content']
         self.dataframe = pd.read_csv(io.StringIO(codecs.decode(content)), na_values=missing_value.MISSING_VALUE_SYMBOL)
-        preprocessing.all_in_one(self.dataframe) # 데이터 전처리
+        preprocessing.pre_all_in_one(self.dataframe) # 데이터 전처리
         for col in self.dataframe.columns:
-            self.column_scaling_method[col] = 'False'
+            self.scaling_method[col] = 'False'
         self.update_dataset_verification_view()
         self.update_data_preprocessing_view()
         self.tab.selected_index = 1
@@ -104,27 +105,29 @@ class Tabs:
         self.update_dataset_verification_view()
 
     def on_auto_preprocessing_change(self, col, change):
-        self.column_scaling_method[col] = change['new']
+        self.scaling_method[col] = change['new']
     
     def on_preprocessing_apply(self, _):
         self.data_preprocessing_loading.description = "Processing..."
         missing_value.run(self.dataframe, self.dependent_col)
         self.data_preprocessing_loading.value += 5
-        
+
+        # Dataset scaling
+        for column in self.scaling_method.keys():
+            if self.scaling_method[column] == 'Normalize':
+                scaler.normalize(self.dataframe, [column])
+            elif self.scaling_method[column] == 'Standardize':
+                scaler.standardize(self.dataframe, [column])
+        self.data_preprocessing_loading.value += 3
+
         self.update_final_dataset_view()
         self.tab.selected_index = 3
-        
-        # 어떤 컬럼이 자동 전처리에 해당하는지 확인
-        # for key in self.is_auto_preprocessing.keys():
-        #     if self.is_auto_preprocessing[key]:
-        #         auto_transform_cols.append(key)
-        #     else:
-        #         non_auto_transform_cols.append(key
         
     def update_data_preprocessing_view(self):
         children = []
         dropdown_dependent = widgets.Dropdown(options=self.dataframe.columns.to_list(), description="종속 변수 설정")
         dropdown_dependent.observe(self.on_dependent_change, names='value')
+        self.dependent_col = dropdown_dependent.value
         children.append(dropdown_dependent)
         children.append(widgets.HTML(value="<hr/>"))
         children.append(widgets.HBox([widgets.Dropdown(options=['Type'], description="Feature name", disabled=True),
@@ -132,7 +135,7 @@ class Tabs:
         for col in self.dataframe.columns:
             dropdown_type = widgets.Dropdown(options=['Categorical', 'Numeric'], value='Categorical' if str(self.dataframe[col].dtypes) in ['bool', 'category'] else 'Numeric', description=col)
             dropdown_type.observe(functools.partial(self.on_type_change, col), names='value')
-            dropdown_scaling_method = widgets.Dropdown(options=['False', 'Normalize', 'Standardize'], value=self.column_scaling_method[col])
+            dropdown_scaling_method = widgets.Dropdown(options=['False', 'Normalize', 'Standardize'], value=self.scaling_method[col])
             dropdown_scaling_method.observe(functools.partial(self.on_auto_preprocessing_change, col), names='value')
             button_col_delete = widgets.Button(description="Delete")
             button_col_delete.on_click(functools.partial(self.on_col_delete, col))
@@ -157,6 +160,7 @@ class Tabs:
     def update_final_dataset_view(self):
         children = []
         children.append(widgets.HTML(value="<h4>총 데이터 수 : " + str(len(self.dataframe)) + "개</h4>"))
+        children.append(widgets.HTML(value="<h4>종속 변수 : " + self.dependent_col))
         children.append(widgets.HTML(value="<h4>최종 데이터셋</h4>"))
         children.append(widgets.HTML(value=self.dataframe.head()._repr_html_()))
         children.append(widgets.HTML(value="<h4>최종 데이터셋 통계치</h4>"))
