@@ -55,6 +55,7 @@ def evaluate_preferred_strategy(dataframe: pd.DataFrame, column: str, target: st
             # Evaluate
             X_train, X_test, y_train, y_test = train_test_split(__dataframe.drop(target, axis=1), __dataframe[target],
                                                                 test_size=0.3, random_state=42)
+            
             clf = GaussianNB().fit(X_train, y_train)
             dt = DecisionTreeClassifier(random_state=42).fit(X_train, y_train)
             score = (clf.score(X_test, y_test) + dt.score(X_test, y_test)) / 2.0
@@ -113,5 +114,4 @@ def apply(dataframe: pd.DataFrame, column: str, strategy: str):
 def run(dataframe: pd.DataFrame, target: str):
     for column in detect(dataframe):
         preferred_strategy = evaluate_preferred_strategy(dataframe, column, target)
-        print(column, preferred_strategy)
         apply(dataframe, column, preferred_strategy)
