@@ -3,7 +3,7 @@ from autobahn.utils.dataset import verify
 from autobahn.preprocessing import missing_value
 from autobahn.preprocessing import column_cleaner
 from autobahn.preprocessing import type_converter
-from autobahn.preprocessing import category_encoding
+from autobahn.preprocessing import category_encoder
 
 
 # Run pre steps in preprocessing
@@ -26,4 +26,4 @@ def post_all_in_one(dataframe: pd.DataFrame, target: str):
         return
     
     missing_value.run(dataframe, target)
-    category_encoding.run(dataframe)
+    category_encoder.run(dataframe)
