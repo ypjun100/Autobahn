@@ -18,7 +18,8 @@ class Tabs:
     def __init__(self):
         self.tab = widgets.Tab()
         self.filename = ''                # 업로드한 파일 이름
-        self.dataframe = None             # 데이터 변수
+        self.dataframe = None             # 입력 데이터프레임
+        self.dataset = None               # 모델에 입력될 데이터셋
         self.dependent_col = ""           # 종속변수 명
         self.is_echo = False              # Dropdown 에코 방지
         self.scaling_method = {}          # 각 변수별 스케일링 방식 지정 (기본값: False)
@@ -106,6 +107,8 @@ class Tabs:
 
     def on_col_delete(self, col, _):
         self.dataframe.drop(col, axis = 1, inplace=True)
+        if col in self.scaling_method:
+            self.scaling_method[col] = 'False'
         self.update_data_preprocessing_view()
         self.update_dataset_verification_view()
 
@@ -113,20 +116,23 @@ class Tabs:
         self.scaling_method[col] = change['new']
     
     def on_preprocessing_apply(self, _):
+        # Copy dataframe to dataset
+        self.dataset = self.dataframe.copy()
+
         self.data_preprocessing_loading.description = "Processing..."
-        missing_value.run(self.dataframe, self.dependent_col)
+        missing_value.run(self.dataset, self.dependent_col)
         self.data_preprocessing_loading.value += 5
 
         # Dataset encoding
-        category_encoder.run(self.dataframe)
+        category_encoder.run(self.dataset)
         self.data_preprocessing_loading.value += 3
 
         # Dataset scaling
         for column in self.scaling_method.keys():
             if self.scaling_method[column] == 'Normalize':
-                scaler.normalize(self.dataframe, [column])
+                scaler.normalize(self.dataset, [column])
             elif self.scaling_method[column] == 'Standardize':
-                scaler.standardize(self.dataframe, [column])
+                scaler.standardize(self.dataset, [column])
         self.data_preprocessing_loading.value += 2
 
         self.update_final_dataset_view()
@@ -172,12 +178,12 @@ class Tabs:
     
     def update_final_dataset_view(self):
         children = []
-        children.append(widgets.HTML(value="<h4>총 데이터 수 : " + str(len(self.dataframe)) + "개</h4>"))
+        children.append(widgets.HTML(value="<h4>총 데이터 수 : " + str(len(self.dataset)) + "개</h4>"))
         children.append(widgets.HTML(value="<h4>종속 변수 : " + self.dependent_col))
         children.append(widgets.HTML(value="<h4>최종 데이터셋</h4>"))
-        children.append(widgets.HTML(value=self.dataframe.head()._repr_html_()))
+        children.append(widgets.HTML(value=self.dataset.head()._repr_html_()))
         children.append(widgets.HTML(value="<h4>최종 데이터셋 통계치</h4>"))
-        children.append(widgets.HTML(value=get_dataset_statistics(self.dataframe).style.hide()._repr_html_()))
+        children.append(widgets.HTML(value=get_dataset_statistics(self.dataset).style.hide()._repr_html_()))
         children.append(widgets.HTML(value="<hr/>"))
         start_modeling_button = widgets.Button(description="Start Modeling")
         start_modeling_button.on_click(self.on_start_modeling)
@@ -207,7 +213,7 @@ class Tabs:
     def start_modeling(self):
         self.auto_modeling_output.clear_output()
         with self.auto_modeling_output:
-            result = modeling.classification(self.dataframe, self.dependent_col)
+            result = modeling.classification(self.dataset, self.dependent_col)
             self.model = result['model']
             self.auto_modeling_result_table.value = result['result_table']._repr_html_()
     
