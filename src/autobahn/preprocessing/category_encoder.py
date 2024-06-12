@@ -43,9 +43,9 @@ def detect(dataframe: pd.DataFrame) -> list[str]:
 def encode_category(dataframe: pd.DataFrame, column: str, pipeline = None):
     encoder = Encoder()
     dataframe[column] = encoder.fit_transform(dataframe[column])
-
+    
     if pipeline != None:
-        pipeline.set_encoding(column, encoder)
+        pipeline.set_encoding(column, encoder, encoder.categories)
 
 
 # Main runner

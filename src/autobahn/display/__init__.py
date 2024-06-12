@@ -130,7 +130,7 @@ class Tabs:
         self.pipeline = Pipeline(self.dataset, self.dependent_col)
 
         # Dataset encoding
-        category_encoder.run(self.dataset, self.pipeline)
+        category_encoder.run(self.dataset, self.dependent_col, self.pipeline)
         self.data_preprocessing_loading.value += 3
 
         # Dataset scaling
