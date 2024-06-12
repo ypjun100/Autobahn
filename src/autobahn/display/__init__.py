@@ -4,8 +4,8 @@ import codecs
 import functools
 import pandas as pd
 import ipywidgets as widgets
-from datetime import datetime
 
+from autobahn.utils import Pipeline
 import autobahn.modeling as modeling
 from autobahn.preprocessing import scaler
 import autobahn.preprocessing as preprocessing
@@ -23,6 +23,7 @@ class Tabs:
         self.dataset = None               # 모델에 입력될 데이터셋
         self.dependent_col = ""           # 종속변수 명
         self.is_echo = False              # Dropdown 에코 방지
+        self.pipeline = None              # 데이터 전처리 파이프라인 클래스
         self.scaling_method = {}          # 각 변수별 스케일링 방식 지정 (기본값: False)
         self.result_model = None          # 최종 도출 모델
 
@@ -124,16 +125,19 @@ class Tabs:
         missing_value.run(self.dataset, self.dependent_col)
         self.data_preprocessing_loading.value += 5
 
+        # Initalize pipeline
+        self.pipeline = Pipeline(self.dataset, self.dependent_col)
+
         # Dataset encoding
-        category_encoder.run(self.dataset)
+        category_encoder.run(self.dataset, self.pipeline)
         self.data_preprocessing_loading.value += 3
 
         # Dataset scaling
         for column in self.scaling_method.keys():
             if self.scaling_method[column] == 'Normalize':
-                scaler.normalize(self.dataset, [column])
+                scaler.normalize(self.dataset, [column], self.pipeline)
             elif self.scaling_method[column] == 'Standardize':
-                scaler.standardize(self.dataset, [column])
+                scaler.standardize(self.dataset, [column], self.pipeline)
         self.data_preprocessing_loading.value += 2
 
         self.update_final_dataset_view()
@@ -221,9 +225,12 @@ class Tabs:
     def on_save_model(self, _):
         random_uuid = str(uuid.uuid4())
         filename = "model-" + random_uuid
-        if self.model != None:
+        if self.model != None and self.pipeline != None:
             modeling.save(self.model, filename)
-            print('모델 저장 완료 -', random_uuid)
+            self.pipeline.save('pipeline-' + random_uuid)
+            print('저장 완료 -', random_uuid)
+        else:
+            print('모델이나 파이프라인이 정의되지 않았습니다.')
 
 
 def display():
