@@ -113,7 +113,7 @@ class Tabs:
         self.update_data_preprocessing_view()
         self.update_dataset_verification_view()
 
-    def on_auto_preprocessing_change(self, col, change):
+    def on_scaling_method_change(self, col, change):
         self.scaling_method[col] = change['new']
     
     def on_preprocessing_apply(self, _):
@@ -154,7 +154,7 @@ class Tabs:
             dropdown_type = widgets.Dropdown(options=['Categorical', 'Numeric'], value='Categorical' if str(self.dataframe[col].dtypes) in ['bool', 'category'] else 'Numeric', description=col)
             dropdown_type.observe(functools.partial(self.on_type_change, col), names='value')
             dropdown_scaling_method = widgets.Dropdown(options=['False', 'Normalize', 'Standardize'], value=self.scaling_method[col])
-            dropdown_scaling_method.observe(functools.partial(self.on_auto_preprocessing_change, col), names='value')
+            dropdown_scaling_method.observe(functools.partial(self.on_scaling_method_change, col), names='value')
             button_col_delete = widgets.Button(description="Delete")
             button_col_delete.on_click(functools.partial(self.on_col_delete, col))
             children.append(widgets.HBox([dropdown_type, dropdown_scaling_method, button_col_delete]))
