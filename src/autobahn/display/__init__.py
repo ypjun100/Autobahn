@@ -1,9 +1,10 @@
 import io
+import uuid
 import codecs
-from datetime import datetime
 import functools
 import pandas as pd
 import ipywidgets as widgets
+from datetime import datetime
 
 import autobahn.modeling as modeling
 from autobahn.preprocessing import scaler
@@ -218,10 +219,11 @@ class Tabs:
             self.auto_modeling_result_table.value = result['result_table']._repr_html_()
     
     def on_save_model(self, _):
-        filename = self.filename + "-" + datetime.today().strftime("%Y%m%d%H%M%S")
+        random_uuid = str(uuid.uuid4())
+        filename = "model-" + random_uuid
         if self.model != None:
             modeling.save(self.model, filename)
-            print('모델 저장 완료 -', filename)
+            print('모델 저장 완료 -', random_uuid)
 
 
 def display():
