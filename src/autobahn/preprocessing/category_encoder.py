@@ -8,7 +8,7 @@ def detect(dataframe: pd.DataFrame) -> list[str]:
 
 # Encode category column
 def encode_category(dataframe: pd.DataFrame, column: str, pipeline = None):
-    dataframe[column] = dataframe[column].str.upper()
+    dataframe[column] = pd.Series(list(map(str.upper, map(str, dataframe[column])))).astype('category')
     le = LabelEncoder()
     dataframe[column] = le.fit_transform(dataframe[column])
 
@@ -17,6 +17,7 @@ def encode_category(dataframe: pd.DataFrame, column: str, pipeline = None):
 
 
 # Main runner
-def run(dataframe: pd.DataFrame, pipeline = None):
+def run(dataframe: pd.DataFrame, target: str, pipeline = None):
     for column in detect(dataframe):
-        encode_category(dataframe, column, pipeline)
+        if column != target:
+            encode_category(dataframe, column, pipeline)

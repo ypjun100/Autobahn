@@ -223,7 +223,7 @@ class Tabs:
             self.auto_modeling_result_table.value = result['result_table']._repr_html_()
     
     def on_save_model(self, _):
-        random_uuid = str(uuid.uuid4())
+        random_uuid = str(uuid.uuid4()).split('-')[0]
         filename = "model-" + random_uuid
         if self.model != None and self.pipeline != None:
             modeling.save(self.model, filename)

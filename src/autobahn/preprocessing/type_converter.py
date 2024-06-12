@@ -62,13 +62,15 @@ def run(dataframe: pd.DataFrame):
 
     # Convert numeric columns
     for column in dataframe.select_dtypes('number').columns:
-        # If number of unique values in numeric is two, convert to bool
+        # If number of unique values in numeric is two, convert to category
         if len(dataframe[column].dropna(axis=0).unique()) == 2:
-            unique_values = dataframe[column].dropna(axis=0).unique()
-            dataframe[column].replace({unique_values[0]: 0, unique_values[1]: 1}, inplace=True)
-            dataframe[column] = dataframe[column].astype(bool)
-            del unique_values
+            dataframe[column] = dataframe[column].astype("category")
             continue
+            # unique_values = dataframe[column].dropna(axis=0).unique()
+            # dataframe[column].replace({unique_values[0]: 0, unique_values[1]: 1}, inplace=True)
+            # dataframe[column] = dataframe[column].astype(bool)
+            # del unique_values
+            # continue
 
     # Convert object(categorical) columns
     # Each column is attempted to convert into some data type like bool, date, category.
@@ -92,12 +94,12 @@ def run(dataframe: pd.DataFrame):
             pass
 
         # convert to bool
-        if len(dataframe[column].dropna(axis=0).unique()) == 2:
-            unique_values = dataframe[column].dropna(axis=0).unique()
-            dataframe[column].replace({unique_values[0]: 0, unique_values[1]: 1}, inplace=True)
-            dataframe[column] = dataframe[column].astype(bool)
-            del unique_values
-            continue
+        # if len(dataframe[column].dropna(axis=0).unique()) == 2:
+        #     unique_values = dataframe[column].dropna(axis=0).unique()
+        #     dataframe[column].replace({unique_values[0]: 0, unique_values[1]: 1}, inplace=True)
+        #     dataframe[column] = dataframe[column].astype(bool)
+        #     del unique_values
+        #     continue
 
         # convert to category
         if len(dataframe[column].unique()) < len(dataframe[column]):
@@ -112,13 +114,14 @@ def run(dataframe: pd.DataFrame):
 
 # Convert numeric to category
 def numeric_to_category(dataframe: pd.DataFrame, column: str):    
-    if len(dataframe[column].dropna(axis=0).unique()) == 2:       # convert to bool
-        unique_values = dataframe[column].dropna(axis=0).unique()
-        dataframe[column].replace({unique_values[0]: 0, unique_values[1]: 1}, inplace=True)
-        dataframe[column] = dataframe[column].astype(bool)
-        del unique_values
-    elif len(dataframe[column].unique()) < len(dataframe[column]): # convert to category
-        dataframe[column] = dataframe[column].astype("category")
+    dataframe[column] = dataframe[column].astype("category")
+    # if len(dataframe[column].dropna(axis=0).unique()) == 2:       # convert to bool
+    #     unique_values = dataframe[column].dropna(axis=0).unique()
+    #     dataframe[column].replace({unique_values[0]: 0, unique_values[1]: 1}, inplace=True)
+    #     dataframe[column] = dataframe[column].astype(bool)
+    #     del unique_values
+    # elif len(dataframe[column].unique()) < len(dataframe[column]): # convert to category
+    #     dataframe[column] = dataframe[column].astype("category")
         
     gc.collect() # for memory deallocate
 
