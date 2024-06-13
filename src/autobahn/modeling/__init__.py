@@ -12,3 +12,9 @@ def classification(dataset:pd.DataFrame, target: str) -> dict:
 
 def save(model, filename: str):
     save_model(model, filename, verbose=False)
+
+def load(filename: str):
+    return load_model(filename, verbose=False)
+
+def predict(model, data):
+    return predict_model(model, data, verbose=False)
