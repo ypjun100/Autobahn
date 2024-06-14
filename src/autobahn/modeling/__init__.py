@@ -18,3 +18,11 @@ def load(filename: str):
 
 def predict(model, data):
     return predict_model(model, data, verbose=False)
+
+def plot(model, plot:str = ''):
+    if plot in ['shap', 'pdp']:
+        interpret_model(model, plot)
+    elif plot != '':
+        plot_model(model, plot)
+    else:
+        evaluate_model(model)

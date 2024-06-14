@@ -13,8 +13,8 @@ from autobahn.utils.dataset import get_dataset_statistics
 from autobahn.preprocessing import type_converter, missing_value, category_encoder
 
 class Tabs:
-    NUMBER_OF_TABS = 5
-    TITLES = ["데이터셋 업로드", "데이터셋 확인", "데이터 전처리", "최종 데이터셋", "모델링"]
+    NUMBER_OF_TABS = 6
+    TITLES = ["데이터셋 업로드", "데이터셋 확인", "데이터 전처리", "최종 데이터셋", "모델링", "모델 분석"]
 
     def __init__(self):
         self.tab = widgets.Tab()
@@ -45,6 +45,8 @@ class Tabs:
             return self.get_final_dataset_view()
         elif index == 4:
             return self.get_auto_modeling_view()
+        elif index == 5:
+            return self.get_model_analysis_view()
 
 
     ##################
@@ -222,6 +224,7 @@ class Tabs:
             result = modeling.classification(self.dataset, self.dependent_col)
             self.model = result['model']
             self.auto_modeling_result_table.value = result['result_table']._repr_html_()
+        self.update_model_analysis_view()
     
     def on_save_model(self, _):
         random_uuid = str(uuid.uuid4()).split('-')[0]
@@ -232,6 +235,36 @@ class Tabs:
             print('저장 완료 -', random_uuid)
         else:
             print('모델이나 파이프라인이 정의되지 않았습니다.')
+    
+    
+    ##################
+    # 5 - Model Analysis
+    ##################
+    def get_model_analysis_view(self):
+        self.model_analysis_vbox = widgets.VBox([])
+        return self.model_analysis_vbox
+    
+    def on_plot_change(self, plot, _):
+        self.model_analysis_output.clear_output()
+        with self.model_analysis_output:
+            modeling.plot(self.model, plot)
+
+    def update_model_analysis_view(self):
+        children = []
+        auc_button = widgets.Button(description="AUC", disabled = True)
+        auc_button.on_click(functools.partial(self.on_plot_change, 'auc'))
+        cm_button = widgets.Button(description="Confusion Matrix")
+        cm_button.on_click(functools.partial(self.on_plot_change, 'confusion_matrix'))
+        fi_button = widgets.Button(description="Feature Importance")
+        fi_button.on_click(functools.partial(self.on_plot_change, 'feature'))
+        shap_button = widgets.Button(description="SHAP", disabled = True)
+        shap_button.on_click(functools.partial(self.on_plot_change, 'shap'))
+        pdp_button = widgets.Button(description="PDP", disabled = True)
+        pdp_button.on_click(functools.partial(self.on_plot_change, 'pdp'))
+        children.append(widgets.HBox([auc_button, cm_button, fi_button, shap_button, pdp_button]))
+        self.model_analysis_output = widgets.Output()
+        children.append(self.model_analysis_output)
+        self.model_analysis_vbox.children = children
 
 
 def display():
