@@ -223,15 +223,16 @@ class Tabs:
         with self.auto_modeling_output:
             result = modeling.classification(self.dataset, self.dependent_col)
             self.model = result['model']
+            self.shap_model = result['shap_model']
             self.auto_modeling_result_table.value = result['result_table']._repr_html_()
         self.update_model_analysis_view()
     
     def on_save_model(self, _):
         random_uuid = str(uuid.uuid4()).split('-')[0]
-        filename = "model-" + random_uuid
-        if self.model != None and self.pipeline != None:
-            modeling.save(self.model, filename)
+        if self.model != None and self.shap_model != None and self.pipeline != None:
+            modeling.save(self.model, "model-" + random_uuid)
             self.pipeline.save('pipeline-' + random_uuid)
+            modeling.save(self.shap_model, 'shap-model-' + random_uuid)
             print('저장 완료 -', random_uuid)
         else:
             print('모델이나 파이프라인이 정의되지 않았습니다.')
@@ -247,21 +248,20 @@ class Tabs:
     def on_plot_change(self, plot, _):
         self.model_analysis_output.clear_output()
         with self.model_analysis_output:
-            modeling.plot(self.model, plot)
+            if plot == 'shap':
+                modeling.plot(self.shap_model, plot)
+            elif plot in ['confusion_matrix', 'feature']:
+                modeling.plot(self.model, plot)
 
     def update_model_analysis_view(self):
         children = []
-        auc_button = widgets.Button(description="AUC", disabled = True)
-        auc_button.on_click(functools.partial(self.on_plot_change, 'auc'))
+        shap_button = widgets.Button(description="SHAP")
+        shap_button.on_click(functools.partial(self.on_plot_change, 'shap'))
         cm_button = widgets.Button(description="Confusion Matrix")
         cm_button.on_click(functools.partial(self.on_plot_change, 'confusion_matrix'))
         fi_button = widgets.Button(description="Feature Importance")
         fi_button.on_click(functools.partial(self.on_plot_change, 'feature'))
-        shap_button = widgets.Button(description="SHAP", disabled = True)
-        shap_button.on_click(functools.partial(self.on_plot_change, 'shap'))
-        pdp_button = widgets.Button(description="PDP", disabled = True)
-        pdp_button.on_click(functools.partial(self.on_plot_change, 'pdp'))
-        children.append(widgets.HBox([auc_button, cm_button, fi_button, shap_button, pdp_button]))
+        children.append(widgets.HBox([shap_button, cm_button, fi_button]))
         self.model_analysis_output = widgets.Output()
         children.append(self.model_analysis_output)
         self.model_analysis_vbox.children = children
