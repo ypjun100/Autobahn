@@ -18,18 +18,19 @@ class Tabs:
 
     def __init__(self):
         self.tab = widgets.Tab()
-        self.filename = ''                # 업로드한 파일 이름
-        self.dataframe = None             # 입력 데이터프레임
-        self.dataset = None               # 모델에 입력될 데이터셋
-        self.dependent_col = ""           # 종속변수 명
-        self.is_echo = False              # Dropdown 에코 방지
-        self.pipeline = None              # 데이터 전처리 파이프라인 클래스
-        self.scaling_method = {}          # 각 변수별 스케일링 방식 지정 (기본값: False)
-        self.result_model = None          # 최종 도출 모델
-
-        # 데이터프레임 출력이 생략되는 현상 방지
+        self.filename = ''                # Uploaded filename
+        self.dataframe = None             # Raw dataset frame
+        self.dataset = None               # Preprocessed dataset
+        self.dependent_col = ""           # Name of dependent variable
+        self.is_echo = False              # Prevent echoing dropdown menu
+        self.pipeline = None              # Data preprocessing pipeline
+        self.scaling_method = {}          # Scaling method of each variable (Default: False)
+        self.model = None                 # Final model
+        self.shap_model = None            # Final shap model
+        
+        # Prevent omitting dataframe output
         pd.set_option('display.max_colwidth', None)
-        pd.set_option('display.max_columns', None)  
+        pd.set_option('display.max_columns', None)
 
     def get_title(self, index):
         return Tabs.TITLES[index]

@@ -11,13 +11,13 @@ def classification(dataset:pd.DataFrame, target: str) -> dict:
     # Train
     print('Training model...')
     best_model = compare_models(sort='Accuracy', n_select=1, fold=2)
-    finalize_model(best_model)
+    best_model = finalize_model(best_model)
     result = pull()
 
     # Determine best shap model
     print('Determining best shap model...')
     best_shap_model = compare_models(sort='Accuracy', n_select=1, fold=2, include=['dt', 'lightgbm', 'et', 'rf'])
-    finalize_model(best_shap_model)
+    best_shap_model = finalize_model(best_shap_model)
     return {'model': best_model, 'shap_model': best_shap_model, 'result_table': result}
 
 def save(model, filename: str):
