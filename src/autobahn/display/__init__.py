@@ -232,8 +232,9 @@ class Tabs:
         random_uuid = str(uuid.uuid4()).split('-')[0]
         if self.model != None and self.shap_model != None and self.pipeline != None:
             modeling.save(self.model, "model-" + random_uuid)
-            self.pipeline.save('pipeline-' + random_uuid)
             modeling.save(self.shap_model, 'shap-model-' + random_uuid)
+            self.pipeline.save('pipeline-' + random_uuid)
+            self.dataset.to_pickle('dataset-' + random_uuid + '.pkl')
             print('저장 완료 -', random_uuid)
         else:
             print('모델이나 파이프라인이 정의되지 않았습니다.')

@@ -17,7 +17,7 @@ def classification(dataset:pd.DataFrame, target: str) -> dict:
     # Determine best shap model
     print('Determining best shap model...')
     best_shap_model = compare_models(sort='Accuracy', n_select=1, fold=2, include=['dt', 'lightgbm', 'et', 'rf'])
-    best_shap_model = finalize_model(best_shap_model)
+    
     return {'model': best_model, 'shap_model': best_shap_model, 'result_table': result}
 
 def save(model, filename: str):
