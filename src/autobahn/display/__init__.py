@@ -6,11 +6,12 @@ import pandas as pd
 import ipywidgets as widgets
 
 from autobahn.utils import Pipeline
-import autobahn.modeling as modeling
 from autobahn.preprocessing import scaler
 import autobahn.preprocessing as preprocessing
 from autobahn.utils.dataset import get_dataset_statistics
 from autobahn.preprocessing import type_converter, missing_value, category_encoder
+from autobahn.modeling.regression import Regression
+from autobahn.modeling.classification import Classification
 
 class Tabs:
     NUMBER_OF_TABS = 6
@@ -27,6 +28,8 @@ class Tabs:
         self.scaling_method = {}          # Scaling method of each variable (Default: False)
         self.model = None                 # Final model
         self.shap_model = None            # Final shap model
+        self.clf = Classification()       # For building model and predicting values
+        self.reg = Regression()           # For getting shap value
         
         # Prevent omitting dataframe output
         pd.set_option('display.max_colwidth', None)
@@ -211,8 +214,8 @@ class Tabs:
         children = []
         self.auto_modeling_output = widgets.Output()
         children.append(self.auto_modeling_output)
-        self.auto_modeling_result_table = widgets.HTML()
-        children.append(self.auto_modeling_result_table)
+        self.score_table = widgets.HTML()
+        children.append(self.score_table)
         children.append(widgets.HTML(value="<hr/>"))
         save_model_button = widgets.Button(description="Save Model")
         save_model_button.on_click(self.on_save_model)
@@ -222,17 +225,22 @@ class Tabs:
     def start_modeling(self):
         self.auto_modeling_output.clear_output()
         with self.auto_modeling_output:
-            result = modeling.classification(self.dataset, self.dependent_col)
+            # Training classification model
+            result = self.clf.train(self.dataset, self.dependent_col)
             self.model = result['model']
-            self.shap_model = result['shap_model']
-            self.auto_modeling_result_table.value = result['result_table']._repr_html_()
+            
+            # Training regression model
+            self.shap_model = self.reg.train(self.dataset, self.dependent_col, True)
+
+            self.score_table.value = result['score_table']._repr_html_()
+
         self.update_model_analysis_view()
     
     def on_save_model(self, _):
         random_uuid = str(uuid.uuid4()).split('-')[0]
         if self.model != None and self.shap_model != None and self.pipeline != None:
-            modeling.save(self.model, "model-" + random_uuid)
-            modeling.save(self.shap_model, 'shap-model-' + random_uuid)
+            self.clf.save(self.model, "model-" + random_uuid)
+            self.reg.save(self.shap_model, 'shap-model-' + random_uuid)
             self.pipeline.save('pipeline-' + random_uuid)
             self.dataset.to_pickle('dataset-' + random_uuid + '.pkl')
             print('저장 완료 -', random_uuid)
@@ -251,9 +259,9 @@ class Tabs:
         self.model_analysis_output.clear_output()
         with self.model_analysis_output:
             if plot == 'shap':
-                modeling.plot(self.shap_model, plot)
+                self.reg.plot(self.shap_model, plot)
             elif plot in ['confusion_matrix', 'feature']:
-                modeling.plot(self.model, plot)
+                self.clf.plot(self.model, plot)
 
     def update_model_analysis_view(self):
         children = []
