@@ -24,7 +24,7 @@ class Classification:
         self.exp.save_model(model, filename, verbose=False)
 
     def load(self, filename: str):
-        return self.exp.load_model(model, filename, verbose=False)
+        return self.exp.load_model(filename, verbose=False)
 
     def predict(self, model, data):
         return self.exp.predict_model(model, data, verbose=False)

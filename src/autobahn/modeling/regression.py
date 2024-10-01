@@ -5,7 +5,10 @@ class Regression:
     def __init__(self):
         self.exp = RegressionExperiment()
     
-    def train(self, dataset: pd.DataFrame, target: str, enable_variable_encoding: bool = False):
+    def train(self, _dataset: pd.DataFrame, target: str, enable_variable_encoding: bool = False):
+        # Deep copy from original dataframe
+        dataset = _dataset.copy()
+
         # Variable encoding (Categorical -> Numeric)
         if (enable_variable_encoding):
             dataset[target] = dataset[target].astype('category').cat.codes
@@ -26,7 +29,7 @@ class Regression:
         self.exp.save_model(model, filename, verbose=False)
 
     def load(self, filename: str):
-        return self.exp.load_model(model, filename, verbose=False)
+        return self.exp.load_model(filename, verbose=False)
 
     def plot(self, model, plot: str = ''):
         if plot in ['shap']:
