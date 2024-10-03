@@ -11,7 +11,12 @@ class Regression:
 
         # Variable encoding (Categorical -> Numeric)
         if (enable_variable_encoding):
-            dataset[target] = dataset[target].astype('category').cat.codes
+            for column in dataset.columns:
+                if (dataset[column].dtypes == 'category'):
+                    try:
+                        dataset[column] = dataset[column].astype('float')
+                    except:
+                        dataset[column] = dataset[column].astype('category').cat.codes
 
         # Setting up
         self.exp.setup(data=dataset, target=target, train_size=0.8, session_id=42, verbose=False)
