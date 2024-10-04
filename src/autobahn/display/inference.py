@@ -1,8 +1,11 @@
+import os
 import pandas as pd
 import ipywidgets as widgets
 
-from autobahn.modeling import load, predict
 from autobahn.utils import Pipeline
+from autobahn.explainer import explain_with_llama
+from autobahn.modeling.regression import Regression
+from autobahn.modeling.classification import Classification
 
 class Tabs:
     NUMBER_OF_TABS = 2
@@ -10,8 +13,12 @@ class Tabs:
 
     def __init__(self):
         self.tab = widgets.Tab()
+        self.clf = Classification()
+        self.reg = Regression()
         self.pipeline = {}
         self.model = None
+        self.shap_model = None
+        self.dataset = None
 
     def get_title(self, index):
         return Tabs.TITLES[index]
@@ -28,18 +35,24 @@ class Tabs:
     ###################
     def get_model_selecting_view(self):
         self.model_selecting_text = widgets.Text(value='', description='Model ID :')
+        self.hf_access_token_text = widgets.Text(value='', description='HF Token :')
         submit_button = widgets.Button(description="Submit")
         submit_button.on_click(self.on_model_submit)
-        hbox = widgets.HBox([
+        vbox = widgets.VBox([
             self.model_selecting_text,
+            self.hf_access_token_text,
+            widgets.HTML(value="<hr/>"),
             submit_button
         ])
-        return hbox
+        return vbox
     
     def on_model_submit(self, _):
         if self.model_selecting_text.value != '':
             self.pipeline = Pipeline.open('pipeline-' + self.model_selecting_text.value)
-            self.model = load('model-' + self.model_selecting_text.value)
+            self.model = self.clf.load('model-' + self.model_selecting_text.value)
+            self.shap_model = self.reg.load('shap-model-' + self.model_selecting_text.value)
+            self.dataset = pd.read_pickle('dataset-' + self.model_selecting_text.value + '.pkl')
+            os.environ["HF_TOKEN"] = self.hf_access_token_text.value
             self.get_prediction_questions()
             self.update_prediction_view()
             self.tab.selected_index = 1
@@ -62,7 +75,21 @@ class Tabs:
                 dropdown = widgets.Dropdown(options=self.pipeline[key]['category'], description=key + " :")
                 self.prediction_question_widgets[key] = dropdown
 
+    def explain(self, _prediction_df):
+        # Append user input & prediction to dataset
+        dependent_col = [col for col in self.dataset.columns if col not in self.pipeline.keys()][0]
+        prediction_df =  _prediction_df.rename(columns={ 'prediction_label': dependent_col })
+
+        if ('prediction_score' in prediction_df.columns):
+            prediction_df.drop(['prediction_score'], axis=1, inplace=True)
+        combined_dataset = pd.concat([self.dataset, prediction_df], ignore_index=True)
+
+        with self.result_plot_output:
+            explaination_result = explain_with_llama(self.shap_model, combined_dataset, dependent_col)
+        self.result_explaination.value = '<p> Explaination: ' + explaination_result + '</p>'
+
     def on_predict(self, _):
+        self.result_plot_output.clear_output()
         input = {}
         for key in self.prediction_question_widgets:
             input[key] = self.prediction_question_widgets[key].value
@@ -74,10 +101,11 @@ class Tabs:
             elif self.pipeline[key]['type'] == 'category':
                 if self.pipeline[key]['encoding'] == 'True':
                     input[key] = self.pipeline[key]['encoder'].transform(self.prediction_question_widgets[key].value)
-        input = pd.DataFrame([input])
-        result = predict(self.model, input)
-        self.result_prediction.value = '<p style="font-weight: bold">Prediction : ' + str(result['prediction_label'][0]) + '</p>'
-        self.result_score.value = '<p style="font-weight: bold">Score : ' + str(result['prediction_score'][0]) + '</p>'
+        user_input_df = pd.DataFrame([input])
+        result_df = self.clf.predict(self.model, user_input_df)
+        self.explain(result_df)
+        self.result_prediction.value = '<p style="font-weight: bold">Prediction : ' + str(result_df['prediction_label'][0]) + '</p>'
+        self.result_explaination.value = '<p>Explaination: Blur Blur</p>'
 
     def update_prediction_view(self):
         children = []
@@ -88,9 +116,10 @@ class Tabs:
         predict_button.on_click(self.on_predict)
         children.append(predict_button)
         children.append(widgets.HTML(value="<hr/>"))
+        self.result_plot_output = widgets.Output()
         self.result_prediction = widgets.HTML('')
-        self.result_score = widgets.HTML('')
-        children.extend([self.result_prediction, self.result_score])
+        self.result_explaination = widgets.HTML('')
+        children.extend([self.result_plot_output, self.result_prediction, self.result_explaination])
         self.prediction_vbox.children = children
 
 
