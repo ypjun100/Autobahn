@@ -32,6 +32,7 @@ class Explainer:
     def __init__(self, llm_model = 'llama'):
         self.tokenizer = None
         self.llm_model = None
+        self.shap_values = None
 
         if llm_model == 'llama':
             model_id = "meta-llama/Llama-3.1-8B-Instruct"
@@ -46,26 +47,38 @@ class Explainer:
         else:
             print('You choose invalid LLM model.')
 
-    def explain(self, model, combined_dataset, dependent_col):
-        # Apply model pipeline to 'combined_dataset'
-        transformed_dataset = model[:-1].transform(combined_dataset)
-        transformed_dataset[dependent_col] = transformed_dataset[dependent_col].astype('category').cat.codes
+    def calculate_shap_values(self, model, combined_dataset, dependent_col):
+        if not self.shap_values:
+            # Apply model pipeline to 'combined_dataset'
+            transformed_dataset = model[:-1].transform(combined_dataset)
+            transformed_dataset[dependent_col] = transformed_dataset[dependent_col].astype('category').cat.codes
 
-        # Generate shap values
-        explainer = shap.TreeExplainer(model.named_steps["trained_model"])
-        shap_values = explainer(transformed_dataset)
+            # Generate shap values
+            explainer = shap.TreeExplainer(model.named_steps["trained_model"])
+            self.shap_values = explainer(transformed_dataset)
+        
+        return self.shap_values
+
+    def plot_waterfall(self, model, combined_dataset, dependent_col):
+        # Calculate shap values
+        self.calculate_shap_values(model, combined_dataset, dependent_col)
+
+        # Show waterfall plot
+        if self.shap_values:
+            shap.plots.waterfall(self.shap_values[-1])
+
+    def explain(self, model, combined_dataset, dependent_col):
+        # Calculate shap values
+        self.calculate_shap_values(model, combined_dataset, dependent_col)
 
         # Generate shap table
         shap_table = pd.DataFrame({
-            'Values': shap_values.values[-1],
-            'Data': shap_values.data[-1]
+            'Values': self.shap_values.values[-1],
+            'Data': self.shap_values.data[-1]
         })
-        shap_table['top_info_features'] = transformed_dataset.columns
+        shap_table['top_info_features'] = combined_dataset.columns
         shap_table['Rank_Abs_Values'] = shap_table['Values'].abs().rank(ascending=False)
         shap_table = shap_table.sort_values('Rank_Abs_Values').reset_index(drop=True)
-
-        # Draw plot
-        shap.plots.waterfall(shap_values[-1])
 
         # Create input message
         prediction_result_message = self.get_prediction_result_message(str(transformed_dataset.iloc[-1][dependent_col]))

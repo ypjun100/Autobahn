@@ -3,7 +3,7 @@ import pandas as pd
 import ipywidgets as widgets
 
 from autobahn.utils import Pipeline
-from autobahn.explainer import explain_with_llama
+from autobahn.explainer import Explainer
 from autobahn.modeling.regression import Regression
 from autobahn.modeling.classification import Classification
 
@@ -19,6 +19,7 @@ class Tabs:
         self.model = None
         self.shap_model = None
         self.dataset = None
+        self.explainer = None
 
     def get_title(self, index):
         return Tabs.TITLES[index]
@@ -35,12 +36,10 @@ class Tabs:
     ###################
     def get_model_selecting_view(self):
         self.model_selecting_text = widgets.Text(value='', description='Model ID :')
-        self.hf_access_token_text = widgets.Text(value='', description='HF Token :')
         submit_button = widgets.Button(description="Submit")
         submit_button.on_click(self.on_model_submit)
         vbox = widgets.VBox([
             self.model_selecting_text,
-            self.hf_access_token_text,
             widgets.HTML(value="<hr/>"),
             submit_button
         ])
@@ -52,7 +51,8 @@ class Tabs:
             self.model = self.clf.load('model-' + self.model_selecting_text.value)
             self.shap_model = self.reg.load('shap-model-' + self.model_selecting_text.value)
             self.dataset = pd.read_pickle('dataset-' + self.model_selecting_text.value + '.pkl')
-            os.environ["HF_TOKEN"] = self.hf_access_token_text.value
+            os.environ["HF_TOKEN"] = ""
+            self.explainer = Explainer(llm_model="llama")
             self.get_prediction_questions()
             self.update_prediction_view()
             self.tab.selected_index = 1
@@ -84,9 +84,13 @@ class Tabs:
             prediction_df.drop(['prediction_score'], axis=1, inplace=True)
         combined_dataset = pd.concat([self.dataset, prediction_df], ignore_index=True)
 
+        # Waterfall plot
         with self.result_plot_output:
-            explaination_result = explain_with_llama(self.shap_model, combined_dataset, dependent_col)
-        self.result_explaination.value = '<p> Explaination: ' + explaination_result + '</p>'
+            self.explainer.plot_waterfall(self.shap_model, combined_dataset, dependent_col)
+
+        # Get explaination
+        explaination_result = self.explainer.explain(self.shap_model, combined_dataset, dependent_col)
+        self.result_explaination.value = f'<p style="font-weight: bold">Explaination</p><p style="max-width: 100%;">{explaination_result}</p>'
 
     def on_predict(self, _):
         self.result_plot_output.clear_output()
@@ -103,9 +107,8 @@ class Tabs:
                     input[key] = self.pipeline[key]['encoder'].transform(self.prediction_question_widgets[key].value)
         user_input_df = pd.DataFrame([input])
         result_df = self.clf.predict(self.model, user_input_df)
-        self.explain(result_df)
         self.result_prediction.value = '<p style="font-weight: bold">Prediction : ' + str(result_df['prediction_label'][0]) + '</p>'
-        self.result_explaination.value = '<p>Explaination: Blur Blur</p>'
+        self.explain(result_df)
 
     def update_prediction_view(self):
         children = []

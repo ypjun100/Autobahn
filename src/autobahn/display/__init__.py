@@ -57,9 +57,14 @@ class Tabs:
     # 0 - Upload File
     ##################
     def upload_file(self, change):
-        file = change['new'][list(change['new'].keys())[0]]
-        self.filename = file['metadata']['name']
-        content = file['content']
+        content = ''
+        if len(change['new']) == 1:
+            self.filename = change['new'][0]['name']
+            content = change['new'][0]['content']
+        else:
+            file = change['new'][list(change['new'].keys())[0]]
+            self.filename = file['metadata']['name']
+            content = file['content']
         self.dataframe = pd.read_csv(io.StringIO(codecs.decode(content)), na_values=missing_value.MISSING_VALUE_SYMBOL)
         preprocessing.pre_all_in_one(self.dataframe) # 데이터 전처리
         for col in self.dataframe.columns:
