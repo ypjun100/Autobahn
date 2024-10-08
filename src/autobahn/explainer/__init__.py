@@ -33,6 +33,7 @@ class Explainer:
         self.tokenizer = None
         self.llm_model = None
         self.shap_values = None
+        self.transformed_dataset = None
 
         if llm_model == 'llama':
             model_id = "meta-llama/Llama-3.1-8B-Instruct"
@@ -50,12 +51,12 @@ class Explainer:
     def calculate_shap_values(self, model, combined_dataset, dependent_col):
         if not self.shap_values:
             # Apply model pipeline to 'combined_dataset'
-            transformed_dataset = model[:-1].transform(combined_dataset)
-            transformed_dataset[dependent_col] = transformed_dataset[dependent_col].astype('category').cat.codes
+            self.transformed_dataset = model[:-1].transform(combined_dataset)
+            self.transformed_dataset[dependent_col] = self.transformed_dataset[dependent_col].astype('category').cat.codes
 
             # Generate shap values
             explainer = shap.TreeExplainer(model.named_steps["trained_model"])
-            self.shap_values = explainer(transformed_dataset)
+            self.shap_values = explainer(self.transformed_dataset)
         
         return self.shap_values
 
@@ -81,7 +82,7 @@ class Explainer:
         shap_table = shap_table.sort_values('Rank_Abs_Values').reset_index(drop=True)
 
         # Create input message
-        prediction_result_message = self.get_prediction_result_message(str(transformed_dataset.iloc[-1][dependent_col]))
+        prediction_result_message = self.get_prediction_result_message(str(self.transformed_dataset.iloc[-1][dependent_col]))
         input_text_message = self.get_input_text_message(prediction_result_message, shap_table[0:5].to_string(index=False))
         messages = self.get_messages(input_text_message)
 
@@ -96,7 +97,6 @@ class Explainer:
                                 eos_token_id=[
                                     self.tokenizer.eos_token_id,
                                     self.tokenizer.convert_tokens_to_ids("<|eot_id|>")
-                                ],
-                                include_prompt_in_result=False)
+                                ])
         
         return self.tokenizer.decode(output[0], skip_special_tokens=False, clean_up_tokenization_spaces=True)
