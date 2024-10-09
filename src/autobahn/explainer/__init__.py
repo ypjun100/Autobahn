@@ -1,6 +1,9 @@
 import shap
 import pandas as pd
-from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer, logging
+
+# Print only ciritcal error
+logging.set_verbosity(50)
 
 class Explainer:
     BASE_PREDICTION_RESULT = "Result of the prediction is "
