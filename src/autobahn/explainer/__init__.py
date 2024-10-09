@@ -102,4 +102,8 @@ class Explainer:
                                     self.tokenizer.convert_tokens_to_ids("<|eot_id|>")
                                 ])
         
-        return self.tokenizer.decode(output[0], skip_special_tokens=False, clean_up_tokenization_spaces=True)
+        llm_output = self.tokenizer.decode(output[0], skip_special_tokens=False, clean_up_tokenization_spaces=True)
+
+        # Extract response in LLM output
+        response = llm_output[llm_output.rfind('<|start_header_id|>'):]
+        return response[response.find('<|end_header_id|>') + len('<|end_header_id|> '):].replace('<|eot_id|>', '')
