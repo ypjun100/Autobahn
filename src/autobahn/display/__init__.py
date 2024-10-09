@@ -15,7 +15,7 @@ from autobahn.modeling.classification import Classification
 
 class Tabs:
     NUMBER_OF_TABS = 6
-    TITLES = ["데이터셋 업로드", "데이터셋 확인", "데이터 전처리", "최종 데이터셋", "모델링", "모델 분석"]
+    TITLES = ["Dataset Upload", "Verification", "Preprocessing", "Final Dataset", "Modeling", "Analysis"]
 
     def __init__(self):
         self.tab = widgets.Tab()
@@ -66,7 +66,7 @@ class Tabs:
             self.filename = file['metadata']['name']
             content = file['content']
         self.dataframe = pd.read_csv(io.StringIO(codecs.decode(content)), na_values=missing_value.MISSING_VALUE_SYMBOL)
-        preprocessing.pre_all_in_one(self.dataframe) # 데이터 전처리
+        preprocessing.pre_all_in_one(self.dataframe) # Data preprocessing
         for col in self.dataframe.columns:
             self.scaling_method[col] = 'False'
         self.update_dataset_verification_view()
@@ -88,10 +88,10 @@ class Tabs:
     
     def update_dataset_verification_view(self):
         children = []
-        children.append(widgets.HTML(value="<h4>총 데이터 수 : " + str(len(self.dataframe)) + "개</h4>"))
-        children.append(widgets.HTML(value="<h4>입력 데이터셋</h4>"))
+        children.append(widgets.HTML(value="<h4>Number of rows : " + str(len(self.dataframe)) + "</h4>"))
+        children.append(widgets.HTML(value="<h4>Input Dataset</h4>"))
         children.append(widgets.HTML(value=self.dataframe.head()._repr_html_()))
-        children.append(widgets.HTML(value="<h4>입력 데이터셋 통계치</h4>"))
+        children.append(widgets.HTML(value="<h4>Statistics of Input Dataset</h4>"))
         children.append(widgets.HTML(value=get_dataset_statistics(self.dataframe).style.hide()._repr_html_()))
         self.data_verfication_vbox.children = children
     
@@ -160,7 +160,7 @@ class Tabs:
         
     def update_data_preprocessing_view(self):
         children = []
-        dropdown_dependent = widgets.Dropdown(options=self.dataframe.columns.to_list(), description="종속 변수 설정")
+        dropdown_dependent = widgets.Dropdown(options=self.dataframe.columns.to_list(), description="Dependent Variable")
         dropdown_dependent.observe(self.on_dependent_change, names='value')
         self.dependent_col = dropdown_dependent.value
         children.append(dropdown_dependent)
@@ -196,11 +196,11 @@ class Tabs:
     
     def update_final_dataset_view(self):
         children = []
-        children.append(widgets.HTML(value="<h4>총 데이터 수 : " + str(len(self.dataset)) + "개</h4>"))
-        children.append(widgets.HTML(value="<h4>종속 변수 : " + self.dependent_col))
-        children.append(widgets.HTML(value="<h4>최종 데이터셋</h4>"))
+        children.append(widgets.HTML(value="<h4>Number of rows : " + str(len(self.dataset)) + "</h4>"))
+        children.append(widgets.HTML(value="<h4>Dependent Variable : " + self.dependent_col))
+        children.append(widgets.HTML(value="<h4>Final Dataset</h4>"))
         children.append(widgets.HTML(value=self.dataset.head()._repr_html_()))
-        children.append(widgets.HTML(value="<h4>최종 데이터셋 통계치</h4>"))
+        children.append(widgets.HTML(value="<h4>Statistics of Final Dataset</h4>"))
         children.append(widgets.HTML(value=get_dataset_statistics(self.dataset).style.hide()._repr_html_()))
         children.append(widgets.HTML(value="<hr/>"))
         start_modeling_button = widgets.Button(description="Start Modeling")
@@ -249,9 +249,9 @@ class Tabs:
             self.reg.save(self.shap_model, 'shap-model-' + random_uuid)
             self.pipeline.save('pipeline-' + random_uuid)
             self.dataset.to_pickle('dataset-' + random_uuid + '.pkl')
-            print('저장 완료 -', random_uuid)
+            print('Complete to save -', random_uuid)
         else:
-            print('모델이나 파이프라인이 정의되지 않았습니다.')
+            print('Invalid model or pipeline')
     
     
     ##################

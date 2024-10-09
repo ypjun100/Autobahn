@@ -9,7 +9,7 @@ from autobahn.modeling.classification import Classification
 
 class Tabs:
     NUMBER_OF_TABS = 2
-    TITLES = ['모델 선택', '예측']
+    TITLES = ['Model Selection', 'Prediction']
 
     def __init__(self):
         self.tab = widgets.Tab()
