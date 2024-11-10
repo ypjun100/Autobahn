@@ -26,7 +26,7 @@ class Regression:
         best_model = self.exp.compare_models(sort='MAE',
                                              n_select=1,
                                              fold=2,
-                                             include=['dt', 'et', 'rf', 'lightgbm'])
+                                             include=['dt', 'et', 'rf'])
 
         return best_model
 
